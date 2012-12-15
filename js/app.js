@@ -1,13 +1,7 @@
-//-------------------------------------------------------------//
-// jquery mobile version  - Andrew Hart 11/12 MSCNS
-// *Caveats noticed with addition of jquery mobile to backbone:
-//   -> The html templates cant be assigned to underscore as hash option like normal; Instead you have to assign them in
-//      the views initialize method to this.template...Something weird that only happens with jquery mobile.
-//   -> Change ups in the bind / listeners affecting the views
-//      If you remove collection.bind(change) but leave it for model.bind(change) then
-//      jquery mobile doesnt react well and you lose your css formatting
-//   -> Double render or fetch for every time we query - pre jqm render fetches & post fetches too
-//   -> ensure cross-domain is set in jqm config and jquery $.ajax also
+//---------------------------------------------------------------//
+// Backbone client - using CSS + imgs to get the Native iOS look //
+// Andrew Hart 11/12 MSCNS www.mscns.com || www.pressedweb.com   //
+//---------------------------------------------------------------//
 
 
 // extending the core
