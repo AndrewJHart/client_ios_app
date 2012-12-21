@@ -49,9 +49,6 @@
     window.Messages = Backbone.LiveCollection.extend({
         model: Message,
 
-        // if / at beginning of url string then it loads just domain + entire url string
-        // if no / at beginning it loads current url + url string (ie: site is mscns.com/client-api then url
-        // becomes mscns.com/client-api/message) but with forward slash its just mscns.com/message/
         url: 'http://mscns.webfactional.com/dev-api/events/api/v2/message/',
 
         initialize: function() {
@@ -232,12 +229,8 @@
             });
 
             if (this.model.isNew()) {
-                //this.model.url = this.model.urlRoot;
-                var self = this;
-
                 // I choose to pass the collection in the options hash upon instantiation - however we could do away with OOP and
                 // ensure that client.App.messages !== null and then call create on it... would rather do it by passing collection to my view
-
                 this.collection.create(this.model, {
                     wait: true,
                     success: function () {
@@ -275,13 +268,11 @@
         },
 
         search: function() {
-            console.log('clicked search on item page. Setting slideFrom to right');
             this.slideFrom = 'right';
             return this;
         },
 
         back: function() {
-            console.log('clicked back on item page. Setting slideFrom to left');
             this.slideFrom = 'left';
             return this;
         },
@@ -427,10 +418,8 @@
 
             // if this is the first time the app runs then do some configuration
             if (this.firstTransition) {
-                // If there is no current page (app just started) -> No transition: Position new page in the view port
                 $(page.el).attr('class', 'page stage-center');
                 this.content.append(page.el);
-                this.pageHistory = [window.location.hash];
                 this.currentPage = page;
                 this.firstTransition = false;
                 slideFrom = 'left';
