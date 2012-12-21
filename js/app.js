@@ -1,24 +1,24 @@
-//---------------------------------------------------------------//
-// Backbone client - using CSS + imgs to get the Native iOS look //
-// Andrew Hart 11/12 MSCNS www.mscns.com || www.pressedweb.com   //
-//---------------------------------------------------------------//
+//-------------------------------------------------------------//
+// HTML5 + JS Application  - Andrew Hart 11/12 MSCNS
+// *Caveats
 
 
-// extending the core
-Backbone.View.prototype.close = function () {
-    if (this.beforeClose) {
-        this.beforeClose();
-    }
-
-    console.log('Unbinding events for view ' + this.cid);
-    this.undelegateEvents();
-    this.remove();
-    this.unbind();
-};
 
 (function ($) {
 
     'use strict';
+
+    // extending the core
+    Backbone.View.prototype.close = function () {
+        console.log('Unbinding events for old view ' + this.cid);
+        this.remove();  // remove element from dom
+        this.unbind();  // unbind the views events
+
+        // trigger onClose in view
+        if (this.onClose) {
+            this.onClose();  // make the view unbind from the collection or model its bound too
+        }
+    };
 
 
     //-----------------//
@@ -39,7 +39,9 @@ Backbone.View.prototype.close = function () {
         defaults:{
             'id':null,
             'name':'',
-            'description':''
+            'description':'',
+            'priority': '1',
+            'alert': 'a'
         }
     });
 
@@ -105,26 +107,47 @@ Backbone.View.prototype.close = function () {
     // client views //
     //--------------//
 
-    window.MessagePageView = Backbone.View.extend({
+    window.SearchPage = Backbone.View.extend({
 
         initialize: function() {
             this.template = _.template($('#search-main').html());
+
+            this.collection.bind('reset', this.update, this);   // render whenever reset is triggered
+            this.collection.bind('change', this.update, this);  // render whenever a change is triggered in the list
+            this.collection.bind('add', this.update, this);     // render whenever a new model is added to the collection
+            this.collection.bind('remove', this.update, this);  // also re-render after an item is removed via pusher to reflect changes in list
         },
 
         render: function (eventName) {
+            var self = this;
+            this.$el.empty();
+
             $(this.el).html(this.template(this.model.toJSON()));  // throw json string to template and attach to page
 
-            // only instantiate the listview one time and keep a reference to it
-            this.listView = new MessageListView({ /* el: $('ul', this.el), */ model: this.model, collection: this.collection });
+            this.update();  // since we have to make a choice on separation of views or logic to make search work then keep it simple by not
+                            // re-drawing the list each time the collection observes change. Call once for render here ;)
 
-            this.listView.render();
+            console.log('Message List :: Render :: End');
+
+            return this;
+        },
+
+        // is this hacky?? perhaps debouncing or a slight delay in the event would be better
+        update: function() {
+            var self = this;
+            $('#myList', this.el).empty();
+
+            // instantiate the list items and pass to list item view for rendering.
+            this.collection.each(function (message) {
+                $('#myList', this.el).append(new ListItemWidget({ model: message }).render().el);
+            }, this);
 
             return this;
         },
 
         events: {
             'keyup .search-query': 'search',
-            'click .add-message': 'addMessage'
+            'click .add-message': 'add'
         },
 
         search: function (e) {
@@ -135,46 +158,28 @@ Backbone.View.prototype.close = function () {
             this.model.findByName(queryVal);
         },
 
-        addMessage: function(e) {
+        add: function(e) {
+            this.slideFrom = 'right';
             App.navigate('add/', true);
 
             return false;
-        }
-    });
-
-    // ul view - wrapper for list items view
-    window.MessageListView = Backbone.View.extend({
-        tagName: 'ul',
-
-        initialize: function () {
-            this.collection.bind('reset', this.render, this);   // render whenever reset is triggered
-            this.collection.bind('change', this.render, this);  // render whenever a change is triggered in the list
-            this.collection.bind('add', this.render, this);     // render whenever a new model is added to the collection
-            this.collection.bind('remove', this.render, this);  // also re-render after an item is removed via pusher to reflect changes in list
         },
 
-        render: function () {
-            var self = this;
-            this.$el.empty();
-
-            // instantiate the list items and pass to list item view for rendering
-            this.collection.each(function (message) {
-                self.$el.append(new MessageListItemView({ model: message }).render().el);
-            }, this);
-
-            console.log('Message List :: Render :: End');
-
-            return this;
+        onClose: function () {
+            this.collection.unbind('reset', this.render);
+            this.collection.unbind('add', this.render);
+            this.collection.unbind('change', this.render);
+            this.collection.unbind('remove', this.render);
+            console.log('MessageListView::onClose method triggered');
         }
     });
 
     // Main event list view tied to event-lists dom
-    window.MessageListItemView = Backbone.View.extend({
+    window.ListItemWidget = Backbone.View.extend({
         tagName: 'li',
 
         initialize: function() {
             this.template = _.template($('#message-list-item').html());
-            this.model.bind('destroy', this.close, this);  // on destroy this model we want to close this view
         },
 
         render: function () {
@@ -187,14 +192,15 @@ Backbone.View.prototype.close = function () {
     });
 
     // Add Message View
-    window.MessageCreateView = Backbone.View.extend({
+    window.NewPage = Backbone.View.extend({
         events: {
-            'click .save': 'saveMessage'
+            'click .save': 'save',
+            'click .search': 'search',
+            'click .back': 'back'
         },
 
         initialize: function() {
             this.template = _.template($('#message-create-item').html());
-            //this.model.bind('change', this.render, this);
         },
 
         render: function () {
@@ -205,7 +211,17 @@ Backbone.View.prototype.close = function () {
             return this;
         },
 
-        saveMessage: function() {
+        search: function() {
+            this.slideFrom = 'left';
+            return this;
+        },
+
+        back: function() {
+            this.slideFrom = 'right';
+            return this;
+        },
+
+        save: function() {
             window.console.log('event save initiated');
 
             // get our model data from HTML elements values
@@ -224,42 +240,31 @@ Backbone.View.prototype.close = function () {
 
                 this.collection.create(this.model, {
                     wait: true,
-                    success:function () {
+                    success: function () {
                         window.console.log('success callback - on POST complete');
 
                         App.navigate('', true);
                     }
                 });
             }
-            else {
-                var that = this;
 
-                this.model.save({}, {
-                    //wait: true,
-                    success:function () {
-                        window.console.log('success callback - PUT complete');
-                    },
-                    error:function () {
-                        window.console.log('Error on PUT');
-                    }
-                });
-            }
+            this.slideFrom = 'right';
             return false;
         }
     });
 
     // Detail view - shows more info on selected event and has buttons for changes
-    window.EventDetailView = Backbone.View.extend({
+    window.ItemPage = Backbone.View.extend({
 
         events: {
-            'click .delete': 'deleteEvent'
+            'click .delete': 'delete',
+            'click .search': 'search',
+            'click .back': 'back'
         },
 
         initialize: function () {
             this.template = _.template($("#message-detail").html());
-            //this.model.bind('change', this.render, this); // TODO: temporary will enable when i find fix.
-            //this.model.bind('destroy', this.close, this);
-        //    this.model.bind('reset', this.render, this);
+            this.model.bind('change', this.render, this); // TODO: temporary will enable when i find fix.
         },
 
         render: function () {
@@ -269,7 +274,19 @@ Backbone.View.prototype.close = function () {
             return this;
         },
 
-        deleteEvent: function () {
+        search: function() {
+            console.log('clicked search on item page. Setting slideFrom to right');
+            this.slideFrom = 'right';
+            return this;
+        },
+
+        back: function() {
+            console.log('clicked back on item page. Setting slideFrom to left');
+            this.slideFrom = 'left';
+            return this;
+        },
+
+        delete: function () {
             // get the model associated with this view
             this.model.destroy({
                 success:function () {
@@ -282,7 +299,13 @@ Backbone.View.prototype.close = function () {
                 }
             });
 
+            this.slideFrom = 'right';
+
             return false;
+        },
+
+        onClose: function() {
+            this.model.unbind('change', this.render);
         }
     });
 
@@ -303,13 +326,9 @@ Backbone.View.prototype.close = function () {
         initialize: function () {
             this.content = $('#content');
 
-            this.content.on('click', '.header-back-button', function(event) {
-                window.history.back();
-                return false;
-            });
-
-            this.firstPage = true;
-            this.pageHistory = [];
+            this.firstTransition = true;
+            this.firstRun = true;
+            this.viewRef = false;
 
             var self = this;
 
@@ -337,12 +356,14 @@ Backbone.View.prototype.close = function () {
             // moved some of the list insantiation work to here
             this.messages = new Messages();
 
+            // create our pusher object
             this.pusher = new Pusher('3fb8e3f49e89f2640bc9');
 
+            // hook our collection into pusher
             this.messages.live({pusher:this.pusher, channel:'client-api', channelName:'client-api', log:true, eventType:'message'});
 
-            this.searchPage = new MessagePageView({model: this.messages, collection: this.messages });
-
+            // create Search view object once and maintain a reference to it
+            this.searchPage = new SearchPage({model: this.messages, collection: this.messages });
         },
 
         selectItem: function(event) {
@@ -355,18 +376,10 @@ Backbone.View.prototype.close = function () {
 
         // Standard List View (Fetches objects, passes the collection to listView which instantiates ListItemView and writes to template
         list: function () {
-            if (this.currentView)
-            {
-                this.currentView.remove();
-                this.currentView.close();
-                this.currentView = null;
-            }
-
-
             // if this is first render then show the entire list
-            if (this.firstPage) {
+            if (this.firstRun) {
 
-                this.firstPage = false;
+                this.firstRun = false;
                 console.log('fetching entire collection from Server for first render.');
                 
                 // this will not work unless we wait for success and then act
@@ -375,7 +388,6 @@ Backbone.View.prototype.close = function () {
                 // TODO: store a copy of the collection before filtering and resetting it
                 this.messages.cachedCollection = new Messages();
                 this.messages.cachedCollection.reset(this.messages.models);
-
             }
 
             this.changePage(this.searchPage.render());
@@ -383,34 +395,28 @@ Backbone.View.prototype.close = function () {
 
         // Detail View fetches one model from the list and instantiates only the detail or list view passing single model to it
         detail:function (id) {
-            window.console.log('detail route activated');
-
-            if (this.currentView)
-            {
-                this.currentView.remove();
-                this.currentView.close();
-                this.currentView = null;
+            if (this.viewRef) {
+                console.log('killing zombie view (prev page) with id: ' + this.viewRef.cid);
+                this.viewRef.close();
             }
 
             // get our single model from the collection by id
-            if (App.messages) {
-                this.message = App.messages.get(id);
-                this.currentView = new EventDetailView({ model: this.message });
-                this.changePage(this.currentView.render());
-            }
+            this.message = App.messages.get(id);
+            this.viewRef = new ItemPage({ model: this.message });
+            this.changePage(this.viewRef.render());
         },
 
+        // New View for adding a model to the collection from within the app
         add: function() {
-            if (this.currentView) {
-                this.currentView.remove();
-                this.currentView.close();
-                this.currentView = null;
+            if (this.viewRef) {
+                console.log('killing zombie view (prev page) with id: ' + this.viewRef.cid);
+                this.viewRef.close();
             }
 
             // render a new view for posting messages
-            this.currentView = new MessageCreateView({model: new Message(), collection: this.messages });
-            this.changePage(this.currentView.render());  // pass collection by reference
-            window.console.log('new event added');
+            this.viewRef = new NewPage({model: new Message(), collection: this.messages });
+            this.changePage(this.viewRef.render());  // pass collection by reference
+            window.console.log('new message added');
         },
 
         // on route add render
@@ -419,29 +425,43 @@ Backbone.View.prototype.close = function () {
             var slideFrom,
                 self = this;
 
-            this.slideFrom = "left";
-
-            if (!this.currentPage) {
+            // if this is the first time the app runs then do some configuration
+            if (this.firstTransition) {
                 // If there is no current page (app just started) -> No transition: Position new page in the view port
                 $(page.el).attr('class', 'page stage-center');
                 this.content.append(page.el);
                 this.pageHistory = [window.location.hash];
                 this.currentPage = page;
+                this.firstTransition = false;
+                slideFrom = 'left';
 
                 return;
             }
 
-            if (page !== this.searchPage) {
-                // remove the add message button
-                $('.add-message').remove();
+            // page object never has a slideFrom set at this point
+            if (this.currentPage.slideFrom === '' || !this.currentPage.slideFrom) {
+                slideFrom = 'right';
+            }
+            else {
+                slideFrom = this.currentPage.slideFrom;
             }
 
-            // Cleaning up: remove old pages that were moved out of the viewport
-            //$('.stage-right, .stage-left').not('#search-main').remove();
+            // Set the transition for the new page
+            var slideClass = 'page stage-' + slideFrom;
+            page.$el.attr('class', slideClass);
 
-            console.log('calling render for view object ' + page.cid + ' rendering in changePage');
+            console.log('Rendering ' + page.cid);
 
             this.content.append(page.el);
+
+            // Wait until the new page has been added to the DOM...
+            setTimeout(function() {
+                // Slide out the current page: If new page slides from the right -> slide current page to the left, and vice versa
+                $(self.currentPage.el).attr('class', 'page transition ' + (slideFrom === "right" ? 'stage-left' : 'stage-right'));
+                // Slide in the new page
+                $(page.el).attr('class', 'page stage-center transition');
+                self.currentPage = page;
+            });
         }
     });
 
