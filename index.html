@@ -12,7 +12,7 @@
 
     <div id="content"></div>
 
-    <!-- underscore templates for backbone - bigger projects will use require.js to load template parts -->
+    <!-- underscore templates for backbone -->
 
     <!-- individual message li template - multiples form a collection appended to a ul dynamically -->
     <script type="text/template" id="message-list-item">
@@ -25,11 +25,11 @@
     <!-- Message Create View -->
     <script type="text/template" id="message-create-item">
         <div class="header">
-            <a href="#" class="header-button header-button-left header-back-button">
+            <a href="#" class="header-button header-button-left header-back-button back">
                 <button>Back</button>
             </a>
             <h1>Create Message</h1>
-            <a href="#" class="header-button header-button-icon header-button-right search" id="view-home-refresh">
+            <a href="#" class="header-button header-button-icon header-button-right search go-forward" id="view-home-refresh">
                 <button><img src="css/images/search-icon.png" alt="Refresh" width="16" height="16"></button>
             </a>
         </div>
@@ -44,7 +44,7 @@
                 <li><textarea id="description" name="description" value="<%= description %>" /></li>
 
                 <li>
-                    <a href="#" class="save pad-right">
+                    <a href="#" class="save pad-right go-forward">
                         Create
                         <span class="metadata"></span>
                     </a>
@@ -57,7 +57,7 @@
     <!-- message detail template -->
     <script type="text/template" id="message-detail">
         <div class="header">
-            <a href="#" class="header-button header-button-left header-back-button">
+            <a href="#" class="header-button header-button-left header-back-button back">
                 <button>Back</button>
             </a>
             <h1>Message Detail</h1>
