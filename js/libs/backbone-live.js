@@ -92,6 +92,15 @@
                     _this.reset(models);
                 });
 
+                // TODO: bind on pusher state to enable / disable localStorage & sync
+                this.pusherOnState = this.pusher.connection.bind('connected', function() {
+                    this.activeStatus = true;
+                });
+
+                this.pusherOffState = this.pusher.connection.bind('unavailable', function() {
+                    this.activeStatus = false;
+                });
+
                 this.isLive = true;
                 return this.pusherChannel;
             }
