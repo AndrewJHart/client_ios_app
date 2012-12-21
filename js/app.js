@@ -10,7 +10,6 @@
 
     // extending the core
     Backbone.View.prototype.close = function () {
-        console.log('Unbinding events for old view ' + this.cid);
         this.remove();  // remove element from dom
         this.unbind();  // unbind the views events
 
@@ -69,7 +68,7 @@
                 cache: false,
 
                 success: function (collection, response) {
-                    console.log('**findByName fetch successful!');
+                    console.log('**Search fetch successful!');
 
                     // store a copy of the collection for filtering and resetting later
                     self.cachedCollection.reset(self.models);
@@ -116,7 +115,6 @@
         },
 
         render: function (eventName) {
-            var self = this;
             this.$el.empty();
 
             $(this.el).html(this.template(this.model.toJSON()));  // throw json string to template and attach to page
@@ -124,20 +122,19 @@
             this.update();  // since we have to make a choice on separation of views or logic to make search work then keep it simple by not
                             // re-drawing the list each time the collection observes change. Call once for render here ;)
 
-            console.log('Message List :: Render :: End');
-
             return this;
         },
 
         // is this hacky?? perhaps debouncing or a slight delay in the event would be better
         update: function() {
-            var self = this;
             $('#myList', this.el).empty();
 
             // instantiate the list items and pass to list item view for rendering.
             this.collection.each(function (message) {
                 $('#myList', this.el).append(new ListItemWidget({ model: message }).render().el);
             }, this);
+
+            console.log('Collection ListView :: Updated / Rendered');
 
             return this;
         },
@@ -163,10 +160,7 @@
         },
 
         onClose: function () {
-            this.collection.unbind('reset', this.render);
-            this.collection.unbind('add', this.render);
-            this.collection.unbind('change', this.render);
-            this.collection.unbind('remove', this.render);
+            this.collection.unbind();  // call unbind on the collection or have zombies everywhere!
             console.log('MessageListView::onClose method triggered');
         }
     });
