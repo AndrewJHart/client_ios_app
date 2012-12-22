@@ -41,6 +41,12 @@
             'description':'',
             'priority': '1',
             'alert': 'a'
+        },
+
+        initialize: function() {
+            // generate a unique id for each model so we can access them in local storage array by id
+            // NOTE: we have to do this b/c we dont want this data on the server and the model id by default is null
+            this.uniqueID = ((Math.random() + 1) * (Math.random()));
         }
     });
 
@@ -52,6 +58,7 @@
 
         initialize: function() {
             this.cachedCollection = {};
+            this.records = [];
         },
 
         findByName: function (key) {
@@ -62,6 +69,7 @@
             var url = this.url + query;
 
             var self = this;
+            var localModels = [];
 
             this.fetch({
                 url: url,
@@ -71,7 +79,10 @@
                     console.log('**Search fetch successful!');
 
                     // store a copy of the collection for filtering and resetting later
-                    self.cachedCollection.reset(self.models);
+                    collection.each(function(model) {
+                        localStorage.setItem(model.uniqueID, JSON.stringify(model));
+                        self.records.push(model.uniqueID);  // keep array to iterate and for length etc..
+                    });
                 },
 
                 error: function (collection, xhr, options) {
@@ -80,7 +91,11 @@
                     // if nothing entered in search then reset collection with cached version
                     if (key === "") {
                         //self.reset(_.toArray(self.cachedCollection.models));
-                        self.reset(self.cachedCollection.models);
+                        for (var i=0; i<self.records.length; i++) {
+                            localModels.push(JSON.parse(localStorage.getItem(self.records[i])));
+                        }
+                        console.log(localModels);
+                        self.reset(localModels);
                     }
                     else {
                         var pattern = new RegExp(key, "gi");
@@ -112,6 +127,8 @@
             this.collection.bind('change', this.update, this);  // render whenever a change is triggered in the list
             this.collection.bind('add', this.update, this);     // render whenever a new model is added to the collection
             this.collection.bind('remove', this.update, this);  // also re-render after an item is removed via pusher to reflect changes in list
+
+            this.listItems = [];
         },
 
         render: function (eventName) {
@@ -121,7 +138,6 @@
 
             this.update();  // since we have to make a choice on separation of views or logic to make search work then keep it simple by not
                             // re-drawing the list each time the collection observes change. Call once for render here ;)
-
             return this;
         },
 
@@ -130,8 +146,25 @@
             $('#myList', this.el).empty();
 
             // instantiate the list items and pass to list item view for rendering.
-            this.collection.each(function (message) {
-                $('#myList', this.el).append(new ListItemWidget({ model: message }).render().el);
+            this.collection.each(function (message, counter) {
+
+                // Keep track of our listItem objects by keeping them in an array; Closing them when re-rendering!
+                if (!this.listItems[counter]) {
+
+                    // push new list item object onto array
+                    this.listItems.push(new ListItemWidget({ model: message }));
+                    $('#myList', this.el).append(this.listItems[counter].render().el);
+
+                    console.log('ItemList counter is: ' + counter);
+
+                    //$('#myList', this.el).append(new ListItemWidget({ model: message }).render().el);
+                }
+                else {
+                    this.listItems[counter].close();
+                    this.listItems.splice( counter, 1, new ListItemWidget({ model: message }) );
+
+                    $('#myList', this.el).append(this.listItems[counter].render().el);
+               }
             }, this);
 
             console.log('Collection ListView :: Updated / Rendered');
@@ -179,6 +212,11 @@
             window.console.log(this.model.toJSON());
 
             return this;
+        },
+
+        onClose: function() {
+            console.log('****ListItemWidget :: onClose() triggered. Killing ListItem ' + this.cid);
+            this.model.unbind();
         }
     });
 
@@ -222,17 +260,36 @@
                 description:$ ('#description').val()
             });
 
-            if (this.model.isNew()) {
-                // I choose to pass the collection in the options hash upon instantiation - however we could do away with OOP and
-                // ensure that client.App.messages !== null and then call create on it... would rather do it by passing collection to my view
-                this.collection.create(this.model, {
-                    wait: true,
-                    success: function () {
-                        window.console.log('success callback - on POST complete');
 
-                        App.navigate('', true);
-                    }
-                });
+            console.log('status of internet connection: ' + this.collection.activeStatus);
+
+            if (this.model.isNew()) {
+
+                if (this.collection.activeStatus) {
+                    // I choose to pass the collection in the options hash upon instantiation - however we could do away with OOP and
+                    // ensure that client.App.messages !== null and then call create on it... would rather do it by passing collection to my view
+                    this.collection.create(this.model, {
+                        wait: true,  // To prevent duplicates from local + pusher use wait: true when connected to internet
+                        success: function () {
+                            window.console.log('success callback - on POST complete');
+
+                            App.navigate('', true);
+                        }
+                    });
+                }
+                else {
+                    this.collection.create(this.model, {
+                        wait: false,  // pass wait false when disconnected so collection gets the model then update localstorage
+                        error: function () {
+                            window.console.log('*Cant sync with server. Saving to LocalStorage.');
+                        }
+                    });
+
+                    // TODO: wrap all this up nice & neat later
+                    localStorage.setItem(self.model.uniqueID, JSON.stringify(self.model));
+                    self.collection.records.push(self.model.uniqueID);  // keep array to iterate and for length etc..
+                    App.navigate('', true);
+                }
             }
 
             this.slideFrom = 'right';
@@ -361,6 +418,14 @@
 
         // Standard List View (Fetches objects, passes the collection to listView which instantiates ListItemView and writes to template
         list: function () {
+            /*
+            if (this.messages.activeStatus) {
+                this.messages.each(function(model) {
+                    Backbone.sync('update', model);
+                });
+            }
+            */
+
             // if this is first render then show the entire list
             if (this.firstRun) {
 
@@ -370,9 +435,7 @@
                 // this will not work unless we wait for success and then act
                 this.messages.fetch({wait: true});
 
-                // TODO: store a copy of the collection before filtering and resetting it
-                this.messages.cachedCollection = new Messages();
-                this.messages.cachedCollection.reset(this.messages.models);
+                // TODO: store a collection in localstorage on first list in case connection is lost before a search can cache it
             }
 
             this.changePage(this.searchPage.render());
@@ -404,8 +467,7 @@
             window.console.log('new message added');
         },
 
-        // on route add render
-
+        // takes care of all transitions setting css properties and appends the template to the DOM
         changePage: function (page) {
             var slideFrom,
                 self = this;
@@ -451,4 +513,9 @@
     window.App = new AppRouter();
     Backbone.history.start();
 
+    // TODO: add localstorage capabilities to Live Collection Pusher and use something along the lines of
+    // TODO: local or server and a syncASAP variables so that when pusher state is disconnected we go local
+    // TODO: and set syncASAP = true; Then when back online sync and continue as normal
+
 })(jQuery);
+
