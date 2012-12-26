@@ -12,15 +12,24 @@
 
     <div id="content"></div>
 
-    <!-- underscore templates for backbone -->
+    <!-- script templates for underscore / handlebars -->
 
     <!-- individual message li template - multiples form a collection appended to a ul dynamically -->
+    <!-- TODO: remove because am using handlebars to pass entire collection directly to it instead of going crazy
+                trying to instantiate n number of list items by iterating over collection and keep track of memory
+    -->
+
+    <!--
     <script type="text/template" id="message-list-item">
         <a href="#<%= id %>/" class="pad-right">
             <h4><%= name %></h4>
             <p><%= description %></p>
         </a>
     </script>
+    -->
+
+
+    <!-- BEGIN UNDERSCORE TEMPLATES -->
 
     <!-- Message Create View -->
     <script type="text/template" id="message-create-item">
@@ -85,17 +94,18 @@
     <!-- Search Header -->
     <script type="text/template" id="search-main">
         <div class="header">
-            <h1>MSCNS IM</h1>
-            <a href="#" class="add-message header-button header-button-icon header-button-right">
-                <button>
-                Add Message
-                </button>
-            </a>
+                <h1>MSCNS IM</h1>
+                <a href="#" class="add-message header-button header-button-icon header-button-right">
+                    <button>
+                    Add Message
+                    </button>
+                </a>
         </div>
 
         <div style="height: 34px; padding-left: 6px; padding-right: 6px; padding-top: 5px; margin-bottom:6px; border-bottom: solid 1px #666">
             <input type="search" class="search-query search-key" placeholder="Search" style="width:100%;font-size: 14px; padding-top:2px; padding-bottom: 2px; margin-top:2px;margin-bottom:2px;border: solid 1px #777777;"/>
         </div>
+
 
         <div id="welcome" style="padding: 12px; text-align: center;">
             <img src="img/mscns_black_logo.png" style="padding-top: 40px;">
@@ -105,10 +115,34 @@
 
 
         <div class="scroll striped" style="top:84px;">
-            <ul id='myList' class="tableview tableview-links"></ul>
+            <ul id='myList' class="tableview tableview-links">
+            </ul>
         </div>
     </script>
 
+    <!-- END UNDERSCORE TEMPLATES -->
+
+
+    <!-- BEING HANDLEBARS TEMPLATES -->
+
+    <!-- temporarily using handlebars for the collection to rid backbone of having an entire separate view just for list Items
+         and having to iterate over the collection in the parent view and trying to keep up with them to delete them ;)
+         Will probably use handlebars all the way but this is just a test.
+    -->
+    <script type="text/x-handlebars-template" id="collection-list">
+    {{#if collection}}
+        {{#each collection}}
+        <li>
+            <a href="#{{id}}/" class="pad-right">
+                <h4>{{name}}</h4>
+                <p>{{description}}</p>
+            </a>
+        </li>
+        {{/each}}
+    {{/if}}
+    </script>
+
+    <!-- END HANDLEBARS TEMPLATES -->
 
 		
     <!-- Scripts -->
@@ -126,6 +160,7 @@
 
     <!-- Include Backbone and underscore -->
     <script src="js/libs/underscore-min.js"></script>
+    <script src="js/libs/handlebars.js"></script>
     <script src="js/libs/backbone-min.js"></script>
     <script src="js/libs/backbone-live.js"></script>
     

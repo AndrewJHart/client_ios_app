@@ -119,53 +119,35 @@
     //--------------//
 
     window.SearchPage = Backbone.View.extend({
+        template: Handlebars.compile($('#collection-list').html()),  // template for the ul list using handlebars
 
         initialize: function() {
-            this.template = _.template($('#search-main').html());
+            this.mainTemplate = _.template($('#search-main').html());  // standard underscore template as we need none of handlebars features here
 
-            this.collection.bind('reset', this.update, this);   // render whenever reset is triggered
-            this.collection.bind('change', this.update, this);  // render whenever a change is triggered in the list
-            this.collection.bind('add', this.update, this);     // render whenever a new model is added to the collection
-            this.collection.bind('remove', this.update, this);  // also re-render after an item is removed via pusher to reflect changes in list
-
-            this.listItems = [];
+            this.collection.bind('reset', this.updateList, this);   // render whenever reset is triggered
+            this.collection.bind('change', this.updateList, this);  // render whenever a change is triggered in the list
+            this.collection.bind('add', this.updateList, this);     // render whenever a new model is added to the collection
+            this.collection.bind('remove', this.updateList, this);  // also re-render after an item is removed via pusher to reflect changes in list
         },
 
-        render: function (eventName) {
+        render: function () {
             this.$el.empty();
 
-            $(this.el).html(this.template(this.model.toJSON()));  // throw json string to template and attach to page
+            this.$el.html(this.mainTemplate(this.model.toJSON()));  // throw json string to template and attach to page
 
-            this.update();  // since we have to make a choice on separation of views or logic to make search work then keep it simple by not
+            this.updateList();  // since we have to make a choice on separation of views or logic to make search work then keep it simple by not
                             // re-drawing the list each time the collection observes change. Call once for render here ;)
             return this;
         },
 
-        // is this hacky?? perhaps debouncing or a slight delay in the event would be better
-        update: function() {
+        // use separate render function for rendering only the list - not the entire search page or we lost focus on keyup when searching cuz collection is triggered
+        updateList: function() {
             $('#myList', this.el).empty();
 
-            // instantiate the list items and pass to list item view for rendering.
-            this.collection.each(function (message, counter) {
-
-                // Keep track of our listItem objects by keeping them in an array; Closing them when re-rendering!
-                if (!this.listItems[counter]) {
-
-                    // push new list item object onto array
-                    this.listItems.push(new ListItemWidget({ model: message }));
-                    $('#myList', this.el).append(this.listItems[counter].render().el);
-
-                    console.log('ItemList counter is: ' + counter);
-
-                    //$('#myList', this.el).append(new ListItemWidget({ model: message }).render().el);
-                }
-                else {
-                    this.listItems[counter].close();
-                    this.listItems.splice( counter, 1, new ListItemWidget({ model: message }) );
-
-                    $('#myList', this.el).append(this.listItems[counter].render().el);
-               }
-            }, this);
+            //---------------------------------------------------------------//
+            // Trying handlebars instead of using extra view with underscore //
+            //---------------------------------------------------------------//
+            $('#myList', this.el).html(this.template({ collection: this.collection.toJSON() }));
 
             console.log('Collection ListView :: Updated / Rendered');
 
@@ -198,27 +180,6 @@
         }
     });
 
-    // Main event list view tied to event-lists dom
-    window.ListItemWidget = Backbone.View.extend({
-        tagName: 'li',
-
-        initialize: function() {
-            this.template = _.template($('#message-list-item').html());
-        },
-
-        render: function () {
-            // automatically take our json object, parse it, and put it into html template with underscore tmpl
-            this.$el.html(this.template(this.model.toJSON()));
-            window.console.log(this.model.toJSON());
-
-            return this;
-        },
-
-        onClose: function() {
-            console.log('****ListItemWidget :: onClose() triggered. Killing ListItem ' + this.cid);
-            this.model.unbind();
-        }
-    });
 
     // Add Message View
     window.NewPage = Backbone.View.extend({
@@ -301,7 +262,7 @@
     window.ItemPage = Backbone.View.extend({
 
         events: {
-            'click .delete': 'delete',
+            'click .delete': 'removeItem', // Changed func name from delete to removeItem due to IE 8 delete reserved keyword
             'click .search': 'search',
             'click .back': 'back'
         },
@@ -328,7 +289,7 @@
             return this;
         },
 
-        delete: function () {
+        removeItem: function () {
             // get the model associated with this view
             this.model.destroy({
                 success:function () {
@@ -377,6 +338,7 @@
             //------------------------------------------------//
             // Courtesy of Coenrates...                       //
             // Check of browser supports touch events...      //
+            // TODO: not supported in IE8 or below; add workaround
             if (document.documentElement.hasOwnProperty('ontouchstart')) {
                 // ... if yes: register touch event listener to change the "selected" state of the item
                 this.content.on('touchstart', 'a', function(event) {
@@ -418,13 +380,6 @@
 
         // Standard List View (Fetches objects, passes the collection to listView which instantiates ListItemView and writes to template
         list: function () {
-            /*
-            if (this.messages.activeStatus) {
-                this.messages.each(function(model) {
-                    Backbone.sync('update', model);
-                });
-            }
-            */
 
             // if this is first render then show the entire list
             if (this.firstRun) {
@@ -442,7 +397,7 @@
         },
 
         // Detail View fetches one model from the list and instantiates only the detail or list view passing single model to it
-        detail:function (id) {
+        detail: function (id) {
             if (this.viewRef) {
                 console.log('killing zombie view (prev page) with id: ' + this.viewRef.cid);
                 this.viewRef.close();
@@ -499,7 +454,7 @@
 
             this.content.append(page.el);
 
-            // Wait until the new page has been added to the DOM...
+            // wait till page is appended then set the opposite transition for old page (currentPage) and slide one out and the other in
             setTimeout(function() {
                 // Slide out the current page: If new page slides from the right -> slide current page to the left, and vice versa
                 $(self.currentPage.el).attr('class', 'page transition ' + (slideFrom === "right" ? 'stage-left' : 'stage-right'));
