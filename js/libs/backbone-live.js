@@ -34,6 +34,9 @@
             options = options || {};
             options.liveType = options.liveType || "poll";
 
+            // TODO: refactor into a better area later
+            this.activeStatus = false;
+
             // if they've supplied a Pusher object or an existing pusherChannel,
             // set it up to use Pusher
             if (options.pusher || options.pusherChannel) {
@@ -94,11 +97,11 @@
 
                 // TODO: bind on pusher state to enable / disable localStorage & sync
                 this.pusherOnState = this.pusher.connection.bind('connected', function() {
-                    this.activeStatus = true;
+                    _this.activeStatus = true;
                 });
 
                 this.pusherOffState = this.pusher.connection.bind('unavailable', function() {
-                    this.activeStatus = false;
+                    _this.activeStatus = false;
                 });
 
                 this.isLive = true;

@@ -163,7 +163,7 @@ body{
 }
 .tableview li{
 	display: block;
-	border-top: 1px solid #e0e0e0;
+	border-bottom: 1px solid #e0e0e0;  /* MOD A.Hart to adjust this border and conflicting ul border w/ rounded edges. Less noticeable at bottom */
 	padding: 10px;
 }
 
@@ -380,4 +380,80 @@ body{
     position: absolute;
     right: 10px;
 	width: 28px;
+}
+
+/* Addl styles added by A.Hart or C. Simmons @ MSCNS */
+
+
+/*  iPhone Detail List Settings:
+    modify ul tableview only to match iphone by using setting width of list
+    to 98% of container, showing a little bit of background. Then adding a rounded
+    border for the first and last items in the list and centering it in the page.
+    Use 10px padding on content inside of the li on the top, left, & bottom
+*/
+#iPhone-settings-list {
+    margin: 0 auto 20px !important;
+    border-radius: 7px !important;
+    width: 97% !important;
+    border: 1px solid #778899 !important;
+}
+
+#iPhone-settings-list div {
+    padding: 10px;
+    width: 90%;  /* use 90% of the list item space for text leaving 10% for icon(s) on right */
+    position: relative;
+}
+
+#iPhone-settings-list input, textarea {
+    border: 0;
+    padding: 5px;
+    width: 40%;
+    position: absolute;  /* absolute to parent div relative */
+
+    /* use top and bottom to fit element to height of container */
+    top: 0;
+    bottom: 0;
+}
+
+#iPhone-settings-list label {
+    padding: 5px;
+}
+
+/* Heading Area for iPhone Nav - breadcrumb - Centers just to the right of the top of first element */
+.scroll .striped h1, h2, h3 {
+    padding-left: 30px;
+}
+
+
+.tableview-links li>a.disclosure{
+    -webkit-touch-callout: none;
+    padding: 0;
+    width: 44px;
+    margin: 0 0 0 -44px;
+    -webkit-box-align: center;
+    -moz-box-align: center;
+    box-align: center;
+    -webkit-box-pack: center;
+    -moz-box-pack: center;
+    box-pack: center;
+    -webkit-box-flex: 0;
+    -moz-box-flex: 0;
+    box-flex: 0;
+}
+.tableview-links li>a.disclosure.tappable-active{
+    background: transparent none;
+}
+.tableview-links li>a.disclosure span{
+    display: inline-block;
+    width: 29px;
+    height: 31px;
+    background: transparent url(images/disclosure-indicator.png) no-repeat left center;
+    -webkit-background-size: 35px 20px;
+    -moz-background-size: 35px 20px;
+    -ms-background-size: 35px 20px;
+    -o-background-size: 35px 20px;
+    background-size: 35px 20px;
+}
+.tableview-links li>a.disclosure.tappable-active span{
+    background-position: top right;
 }
