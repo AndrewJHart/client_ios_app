@@ -2,7 +2,7 @@
 <html>
     <head>
         <title>
-         MSCNS Real-Time Messaging
+         MSCNS.com | HTML5 | Backbone.js | Handlebars.js | CORS Cross-Domain JSON API | Mobile iOS App
         </title>
         <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0"/>
 		<link rel="stylesheet" href="css/styles.css"/>
@@ -13,21 +13,6 @@
     <div id="content"></div>
 
     <!-- script templates for underscore / handlebars -->
-
-    <!-- individual message li template - multiples form a collection appended to a ul dynamically -->
-    <!-- TODO: remove because am using handlebars to pass entire collection directly to it instead of going crazy
-                trying to instantiate n number of list items by iterating over collection and keep track of memory
-    -->
-
-    <!--
-    <script type="text/template" id="message-list-item">
-        <a href="#<%= id %>/" class="pad-right">
-            <h4><%= name %></h4>
-            <p><%= description %></p>
-        </a>
-    </script>
-    -->
-
 
     <!-- BEGIN UNDERSCORE TEMPLATES -->
 
@@ -45,17 +30,27 @@
 
         <div class="scroll striped" style="top:44px;">
             <h3>Create a new Message</h3>
-            <ul class="tableview tableview-links">
-
-                <li><label for="name">Name:</label></li>
-                <li><input id="name" type="text" name="name" data-mini="true" value="<%= name %>" required /></li>
-                <li>                <label for="description">Message:</label></li>
-                <li><textarea id="description" name="description" value="<%= description %>" /></li>
+            <ul id="iPhone-settings-list" class="tableview tableview-links">
+                <li>
+                    <div>
+                        <label for="name"><b>Name:</b></label>
+                        <input id="name" type="text" name="name" data-mini="true" value="<%= name %>" required />
+                    </div>
+                </li>
+                <li>
+                    <div>
+                        <label for="description"><b>Message:</b></label>
+                        <textarea id="description" name="description" value="<%= description %>" />
+                    </div>
+                </li>
 
                 <li>
                     <a href="#" class="save pad-right">
-                        Create
-                        <span class="metadata"></span>
+                        <div>
+                            <b>Save</b>
+                            <br>
+                            <span class="metadata">Create a new message</span>
+                        </div>
                     </a>
                     <a href="#" class="detail-disclosure"><span></span></a>
                 </li>
@@ -76,17 +71,65 @@
         </div>
 
         <div class="scroll striped" style="top:44px;">
-            <div class="message-details">
-                <header>
-                    <h3><%= name %></h3>
-                    <p><%= description %></p>
-                </header>
-            </div>
+          <!--  <div class="message-details"> -->
+                <h3>Detail for Message ID <%= id %></h3>
+                <ul id="iPhone-settings-list" class="tableview tableview-links action-list">
+                    <li>
+                        <div>
+                            <%= name %>
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <%= description %>
+                        </div>
+                    </li>
+                    <li>
+                        <a class="delete back" href="#">
+                            <div>
+                                <b>Delete Message</b>
+                                <br>
+                                <span class="metadata">Permanently remove this item</span>
+                            </div>
+                        </a>
+                        <a href="#" class="detail-disclosure"><span></span></a>
+                    </li>
+                </ul>
 
-            <ul class="tableview tableview-links action-list">
-                <li><a class="delete back" href="#"><h3>Delete Message</h3></a></li>
-                <li><a href="mailto:dhart@mscns.com"><h3>Email</h3><p></p></a></li>
-            </ul>
+                <!-- Separate the controls based on their function -->
+                <ul id="iPhone-settings-list" class="tableview tableview-links">
+                    <li>
+                        <a href="mailto:dhart@mscns.com">
+                            <div>
+                                <b>Email Message</b>
+                                <br>
+                                <span class="metadata">Share this message with others</span>
+                            </div>
+                        </a>
+                        <a href="#" class="detail-disclosure"><span></span></a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <div>
+                                <b>Share on Facebook</b>
+                                <br>
+                                <span class="metadata">Share this message with others</span>
+                            </div>
+                        </a>
+                        <a href="#" class="detail-disclosure"><span></span></a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <div>
+                                <b>Share on Twitter</b>
+                                <br>
+                                <span class="metadata">Share this message with others</span>
+                            </div>
+                        </a>
+                        <a href="#" class="detail-disclosure"><span></span></a>
+                    </li>
+                </ul>
+          <!--  </div>  -->
 
         </div>
     </script>
@@ -107,14 +150,14 @@
         </div>
 
 
-        <div id="welcome" style="padding: 12px; text-align: center;">
+        <div id="welcome" style="padding: 12px; text-align: center; display: none;">
             <img src="img/mscns_black_logo.png" style="padding-top: 40px;">
 
             <h2>Welcome to the MSCNS IM app.</h2>
         </div>
 
 
-        <div class="scroll striped" style="top:84px;">
+        <div class="scroll striped" style="top:84px;"> <!-- originally 84px -->
             <ul id='myList' class="tableview tableview-links">
             </ul>
         </div>
@@ -123,7 +166,7 @@
     <!-- END UNDERSCORE TEMPLATES -->
 
 
-    <!-- BEING HANDLEBARS TEMPLATES -->
+    <!-- BEGIN HANDLEBARS TEMPLATES -->
 
     <!-- temporarily using handlebars for the collection to rid backbone of having an entire separate view just for list Items
          and having to iterate over the collection in the parent view and trying to keep up with them to delete them ;)
@@ -134,9 +177,12 @@
         {{#each collection}}
         <li>
             <a href="#{{id}}/" class="pad-right">
-                <h4>{{name}}</h4>
-                <p>{{description}}</p>
+                <div>
+                    <h4>{{name}}</h4>
+                    <p>{{description}}</p>
+                </div>
             </a>
+            <a href="#{{id}}/" class="disclosure"><span></span></a>
         </li>
         {{/each}}
     {{/if}}
@@ -147,20 +193,20 @@
 		
     <!-- Scripts -->
 	<script src="http://js.pusher.com/1.12/pusher.min.js"></script>
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
     <!-- change ajax defaults -->
     <script type="text/javascript">
         $(document).ready(function() {
             $.ajaxSetup({
-                /* cache: false, */
-                crossDomain: true
+                 cache: false,
+                 crossDomain: true
             });
         });
     </script>
 
     <!-- Include Backbone and underscore -->
     <script src="js/libs/underscore-min.js"></script>
-    <script src="js/libs/handlebars.js"></script>
+    <script src="js/libs/handlebars-min.js"></script>
     <script src="js/libs/backbone-min.js"></script>
     <script src="js/libs/backbone-live.js"></script>
     
