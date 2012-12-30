@@ -27,7 +27,7 @@
 
     // Create basic model that mirrors our backend
     window.Message = Backbone.LiveModel.extend({
-        urlRoot:'http://mscns.webfactional.com/dev-api/events/api/v2/message/', // cross domain needed for apps so we my as well use it here too
+        urlRoot: 'http://mscns.webfactional.com/dev-api/events/api/v2/message/', // cross domain needed for apps so we my as well use it here too
 
         // return the correct url based on the current CRUD op
         url: function () {
@@ -37,7 +37,7 @@
         },
 
         // used to populate fields of new model in the form when user clicks add
-        defaults:{
+        defaults: {
             'id': null,
             'name': '',
             'description': '',
@@ -92,7 +92,7 @@
                     });
                 },
 
-                error:function (collection, xhr, options) {
+                error: function (collection, xhr, options) {
                     console.log('Error on fetch attempt. Test cached results. Filter on cached collection instead.');
 
                     // if nothing entered in search then reset collection with cached version
@@ -423,28 +423,33 @@
 
         // Detail View fetches one model from the list and instantiates only the detail or list view passing single model to it
         detail:function (id) {
+            // Ensure that the user hasn't accidentally navigated to detail page first
+            // if they have then redir them back to the search page to get some data first
+            if (this.firstRun) App.navigate('', true);
+
+            // if app has reference to another view (excluding SearchPage) then kill it
             if (this.viewRef) {
-                console.log('killing zombie view (prev page) with id: ' + this.viewRef.cid);
                 this.viewRef.close();
             }
 
             // get our single model from the collection by id
             this.message = App.messages.get(id);
+
+            // Instantiate this new View & assign to our view reference to track
             this.viewRef = new ItemPage({ model:this.message });
             this.changePage(this.viewRef.render());
         },
 
         // New View for adding a model to the collection from within the app
         add:function () {
+            // if exists destroy old view
             if (this.viewRef) {
-                console.log('killing zombie view (prev page) with id: ' + this.viewRef.cid);
                 this.viewRef.close();
             }
 
-            // render a new view for posting messages
+            // render a new view for posting messages; NOTICE passing the collection for reference
             this.viewRef = new NewPage({model:new Message(), collection:this.messages });
-            this.changePage(this.viewRef.render());  // pass collection by reference
-            window.console.log('new message added');
+            this.changePage(this.viewRef.render());
         },
 
         // takes care of all transitions setting css properties and appends the template to the DOM
@@ -460,7 +465,7 @@
                 this.firstTransition = false;
                 slideFrom = 'left';
 
-                // show the welcome help intro guide
+                // TODO: show the welcome help intro guide when design is done
                 //$('#welcome').css('display', 'block');
                 //$('.scroll').css('top', '320px');
 
@@ -508,7 +513,7 @@
 //$(function(){  });
 
 
-// TODO: add localstorage capabilities to Live Collection Pusher and use something along the lines of
+// TODO: add localstorage capabilities to Backbone-Live library Collection Pusher and use something along the lines of
 // TODO: local or server and a syncASAP variables so that when pusher state is disconnected we go local
 // TODO: and set syncASAP = true; Then when back online sync and continue as normal
 
